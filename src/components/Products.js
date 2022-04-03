@@ -1,15 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import Skeleton from 'react-loading-skeleton';
 import { NavLink } from 'react-router-dom/cjs/react-router-dom.min';
 import AllStarRating from './AllStarRating';
+import MultiRangeSlider from './MultiRangeSlider';
 import Star from './Star';
 
 const Products = () => {
   const [data, setData] = useState([]);
   const [filter, setFilter] = useState(data);
+  const [selectFilter, setSelectFilter] = useState(undefined);
   const [loading, setLoading] = useState(false);
   const [isFilter, setIsFilter] = useState(false);
   const [currentRating, setCurrentRating] = useState(0);
+  const [minVal, setMinVal] = useState(0);
+  const [maxVal, setMaxVal] = useState(100);
+  const [currentValue, setCurrentValue] = useState(0);
+  const [currentMaxValue, setCurrentMaxValue] = useState(0);
 
   let componentMounted = true;
 
@@ -17,10 +24,16 @@ const Products = () => {
     const getProducts = async () => {
       setLoading(true);
       setIsFilter(false);
+
+      // const getLowerPrice = sortPrice.filter((data) => data.price[0]);
+      // const lengt = sortPrice[sortPrice.length - 1];
+      // console.log(lengt, 'highest');
+
       const response = await fetch('https://fakestoreapi.com/products');
       if (componentMounted) {
         setData(await response.clone().json());
         setFilter(await response.json());
+
         setLoading(false);
       }
       return () => {
@@ -29,7 +42,7 @@ const Products = () => {
     };
 
     getProducts();
-  }, [componentMounted]);
+  }, [componentMounted, minVal]);
 
   const Loading = () => {
     return (
@@ -52,6 +65,7 @@ const Products = () => {
 
   const filterProduct = (cat) => {
     const updatedList = data.filter((x) => x.category === cat);
+    // const updatedList = data.filter((x) => x.rating.rate >= 4);
     setFilter(updatedList);
   };
 
@@ -142,10 +156,107 @@ const Products = () => {
     );
   };
 
-  const clickStars = () => {
-    setCurrentRating(currentRating);
-    console.log(currentRating, 'ris rate');
+  // console.log(lengt.price, 'lowest price');
+
+  const getSelectedFilter = (e) => {
+    e.preventDefault();
+    setSelectFilter(e.target.value);
+
+    if (parseInt(e.target.value) === 0) {
+      setFilter(data);
+    }
+    if (parseInt(e.target.value) === 1) {
+      filter.sort(function (a, b) {
+        let titleA = a.title;
+        let titleB = b.title;
+        if (titleA < titleB) return -1;
+        if (titleA > titleB) return 1;
+        return 0;
+      });
+      setFilter(filter);
+    }
+
+    if (parseInt(e.target.value) === 2) {
+      filter.sort(function (a, b) {
+        let titleA = a.title;
+        let titleB = b.title;
+        if (titleA < titleB) return 1;
+        if (titleA > titleB) return -1;
+        return 0;
+      });
+      setFilter(filter);
+    }
+
+    if (parseInt(e.target.value) === 3) {
+      filter.sort(function (a, b) {
+        let titleA = a.price;
+        let titleB = b.price;
+        if (titleA < titleB) return -1;
+        if (titleA > titleB) return 1;
+        return 0;
+      });
+      setFilter(filter);
+    }
+
+    if (parseInt(e.target.value) === 4) {
+      filter.sort(function (a, b) {
+        let titleA = a.price;
+        let titleB = b.price;
+        if (titleA < titleB) return 1;
+        if (titleA > titleB) return -1;
+        return 0;
+      });
+      setFilter(filter);
+    }
   };
+
+  const options = [
+    {
+      label: 'All',
+      value: 0,
+    },
+    {
+      label: 'A to Z',
+      value: 1,
+    },
+    {
+      label: 'Z to A',
+      value: 2,
+    },
+    {
+      label: 'High Price to Lower Price',
+      value: 3,
+    },
+    {
+      label: 'Low Price to Higher Price',
+      value: 4,
+    },
+  ];
+
+  function changeMinMax(min, max) {
+    setCurrentValue(min);
+    setCurrentMaxValue(max);
+    // const minVal = filter.sort(function (a, b) {
+    //   let titleA = a.price;
+    //   let titleB = b.price;
+    //   if (titleA < titleB) return 1;
+    //   if (titleA > titleB) return -1;
+    //   return 0;
+    // });
+
+    const maxVal = filter.sort(function (a, b) {
+      let titleA = a.price;
+      let titleB = b.price;
+      if (titleA < titleB) return 1;
+      if (titleA > titleB) return -1;
+      return 0;
+    });
+
+    const evens = data.filter((item) => item.price <= min);
+    const evenMax = maxVal.filter((item) => item <= min);
+    console.log(evens, 'ffgfgd');
+    setFilter(maxVal);
+  }
   return (
     <div>
       <div
@@ -170,27 +281,37 @@ const Products = () => {
           >
             <div className="card-header">Featured</div>
             <div className="card-body">
-              <h5 className="card-title">Filter By</h5>
+              <h5 className="card-title">Filter By {selectFilter}</h5>
               <div className="card-text">
-                {/* <select class="form-select" aria-label="Default select example">
-                  <option selected>All</option>
-                  <option value="1">A to Z</option>
-                  <option value="2">Z to A</option>
-                  <option value="3">High Price to Lower Price</option>
-                  <option value="3">Low Price to Higher Price</option>
-                </select> */}
+                <select
+                  className="form-select"
+                  aria-label="Default select example"
+                  value={selectFilter}
+                  onChange={(e) => getSelectedFilter(e)}
+                >
+                  {options.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <h5 className="card-title">Stars {currentRating}</h5>
               <div className="card-text">
                 <AllStarRating
-                  onClick={clickStars}
                   setCurrentRating={setCurrentRating}
+                  setFilter={setFilter}
+                  dataFilter={data}
                 />
               </div>
 
-              <a href="#" className="btn btn-primary">
-                Go somewhere
-              </a>
+              <div className="card-text">
+                <MultiRangeSlider
+                  min={minVal}
+                  max={maxVal}
+                  onChange={({ min, max }) => changeMinMax(min, max)}
+                />
+              </div>
             </div>
           </div>
         )}
